@@ -1838,25 +1838,31 @@ function checkIfIpv4AndIpv6IsLocalOrPublic() {
 # $1 is "warp*.conf", maybe "warp.conf" or "warp-profile.conf"; $2 is "wgcf*.conf", maybe "wgcf.conf" or "wgcf-profile.conf"; $3 is "wg[0-9]", maybe "wg0.conf" or etc.
 # $4/$5/$6 are "warp*/wgcf*/wg[0-9]", $7/$8 are "PrivateKey/PublicKey".
 function checkWarp() {
-	echo -ne "\n[${green}Info${plain}] Checking Warp status...\n"
-	warpConfFiles=$(find / -maxdepth 6 -name "$1" -print -or -name "$2" -print -or -name "$3" -print)
-	sysctlWarpProcess=$(systemctl 2>&1 | grep -i "$4\|$5\|$6" | wc -l)
-	rcWarpProcess=$(rc-status 2>&1 | grep -i "$4\|$5\|$6" | wc -l)
-	[[ "$IPStackType" == "BiStack" ]] && {
-		[[ -n "$warpConfFiles" ]] && {
-			for warpConfFile in $(find / -maxdepth 6 -name "$1" -print -or -name "$2" -print -or -name "$3" -print); do
-				if [[ $(grep -ic "$7" "$warpConfFile") -ge "1" || $(grep -ic "$8" "$warpConfFile") -ge "1" ]]; then
-					warpStatic="1"
-					break
-				fi
-			done
-		}
-		[[ "$sysctlWarpProcess" -gt "0" || "$rcWarpProcess" -gt "0" ]] && warpStatic="1"
-	}
-	[[ "$warpStatic" == "1" ]] && {
-		[[ -z "$ipGate" ]] && IPStackType="IPv6Stack"
-		[[ -z "$ip6Gate" ]] && IPStackType="IPv4Stack"
-	}
+	# echo -ne "\n[${green}Info${plain}] Checking Warp status...\n"
+	# sysctlWarpProcess=$(systemctl 2>&1 | grep -i "$4\|$5\|$6" | wc -l)
+	# rcWarpProcess=$(rc-status 2>&1 | grep -i "$4\|$5\|$6" | wc -l)
+	# # Assume no warp if no warp processes detected
+	# if [[ "$sysctlWarpProcess" -eq "0" && "$rcWarpProcess" -eq "0" ]]; then
+	# 	warpStatic="0"
+	# else
+	# 	warpConfFiles=$(find / -maxdepth 6 -name "$1" -print -or -name "$2" -print -or -name "$3" -print)  
+	# 	[[ "$IPStackType" == "BiStack" ]] && {
+	# 		[[ -n "$warpConfFiles" ]] && {
+	# 			for warpConfFile in $(find / -maxdepth 6 -name "$1" -print -or -name "$2" -print -or -name "$3" -print); do
+	# 				if [[ $(grep -ic "$7" "$warpConfFile") -ge "1" || $(grep -ic "$8" "$warpConfFile") -ge "1" ]]; then
+	# 					warpStatic="1"
+	# 					break
+	# 				fi
+	# 			done
+	# 		}
+	# 		[[ "$sysctlWarpProcess" -gt "0" || "$rcWarpProcess" -gt "0" ]] && warpStatic="1"
+	# 	}
+	# fi
+
+	# [[ "$warpStatic" == "1" ]] && {
+	# 	[[ -z "$ipGate" ]] && IPStackType="IPv6Stack" 
+	# 	[[ -z "$ip6Gate" ]] && IPStackType="IPv4Stack"
+	# }
 }
 
 # Examples:
