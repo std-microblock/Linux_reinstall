@@ -1202,9 +1202,7 @@ function checkMem() {
 	# Reference: https://blog.csdn.net/imliuqun123/article/details/126120360
 	# The constant ratio of threshold value(triggering the following conditions) and nominal value(the space of the memory which announced by cloud provider) is coefficient of "0.99".
 	# If it can't be divisible by number "4", we'll take a value that is the multiple of 4 and litter less than the former one.
-	TotalMem=$(($(dmesg | grep -i 'memory' | grep -i 'available' | awk -F ':' '{print $2}' | awk '{print $1}' | cut -d '/' -f 2 | tr -d "a-zA-Z") / 1024))
-	# Alternate methods but not clearly accurate for example "kdump" service occupied a part of memory.
-	[[ -z "$TotalMem" ]] && TotalMem=$(lsmem -b | grep -i "online memory" | awk '{print $NF/1024/1024}')
+	TotalMem=$(lsmem -b | grep -i "online memory" | awk '{print $NF/1024/1024}')
 	[[ -z "$TotalMem" ]] && TotalMem=$(($(cat /proc/meminfo | grep "^MemTotal:" | sed 's/kb//i' | grep -o "[0-9]*" | awk -F' ' '{print $NF}') / 1024))
 	[[ -z "$TotalMem" ]] && TotalMem=$(free -m | grep -wi "mem*" | awk '{printf $2}')
 
