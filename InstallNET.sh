@@ -19,6 +19,8 @@
 ## Twitter: https://twitter.com/brentybh
 ## Modified By Leitbogioro
 ## Blog: https://www.zhihu.com/column/originaltechnic
+## Modified By MicroBlock
+## Blog: https://microblock.cc/
 
 # color
 underLine='\033[4m'
@@ -1423,7 +1425,9 @@ function checkSys() {
 	elif [[ $(echo "$RedHatRelease" | grep -i 'anolis') != "" ]]; then
 		CurrentOS="OpenAnolis"
 	elif [[ $(echo "$RedHatRelease" | grep -i 'scientific') != "" ]]; then
-		CurrentOS="ScientificLinux"
+		CurrentOS="ScientificLinux" 
+	elif [[ $(grep -i 'arch' /etc/os-release) != "" ]]; then
+		CurrentOS="ArchLinux"
 	elif [[ $(echo "$AlpineRelease" | grep -i 'alpine') != "" ]]; then
 		CurrentOS="AlpineLinux"
 	elif [[ "$IsUbuntu" ]] || [[ $(echo "$DebianRelease" | grep -i 'ubuntu') != "" ]]; then
@@ -1445,69 +1449,60 @@ function checkSys() {
 		exit 1
 	fi
 
-	# Remove "inetutils-ping" because it does not support the statement of "ping -4" or "ping -6".
-	# "kexec-tools" is also need to be removed because in environment of official template of Debian 12 on Tencent Cloud, whether it is executing on instance of "Lighthouse" or "CVM"(Cloud Virtual Machine).
-	# This component may cause the menuentry of grub which we had generated and wrote can't be booted successfully when rebooting the system.
-	# "kdump-tools" is a dependence of "kexec-tools".
-	apt purge inetutils-ping kdump-tools kexec-tools -y
-	# Debian like linux OS necessary components.
-	apt install cpio curl dmidecode dnsutils efibootmgr fdisk file gzip iputils-ping jq net-tools openssl tuned util-linux virt-what wget xz-utils -y
-
-	# Redhat like Linux OS prefer to use dnf instead of yum because former has a higher execute efficiency.
-	yum install dnf -y
-	if [[ $? -eq 0 ]]; then
-		# To avoid "Failed loading plugin "osmsplugin": No module named 'librepo'"
-		# Reference: https://anatolinicolae.com/failed-loading-plugin-osmsplugin-no-module-named-librepo/
-		[[ "$CurrentOS" == "CentOS" && "$CurrentOSVer" == "8" ]] && dnf install python3-librepo -y
-		# Redhat like linux OS necessary components.
-		dnf install epel-release -y
-		dnf install bind-utils cpio curl dmidecode dnsutils efibootmgr file gzip jq net-tools openssl redhat-lsb syslinux tuned util-linux virt-what wget xz --skip-broken -y
-	else
-		yum install dnf -y >/root/yum_execute.log 2>&1
-		# In some versions of CentOS 8 which are not subsumed into CentOS-stream are end of supporting by CentOS official, so the source is failure.
-		# We need to change the source from http://mirror.centos.org to http://vault.centos.org to make repository is still available.
-		# Reference: https://techglimpse.com/solve-failed-synchronize-cache-repo-appstream/
-		#            https://qiita.com/yamada-hakase/items/cb1b6124e11ca65e2a2b
-		if [[ $(grep -i "failed to\|no urls in mirrorlist" /root/yum_execute.log) ]]; then
-			if [[ "$CurrentOS" == "CentOS" ]]; then
-				cd /etc/yum.repos.d/
-				sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-				baseRepo=$(ls /etc/yum.repos.d/ | grep -i "base\|cr" | head -n 1)
-				currentRedhatMirror=$(sed -n '/^#baseurl=\|^baseurl=/'p /etc/yum.repos.d/$baseRepo | head -n 1 | awk -F '=' '{print $2}' | sed -e 's|^[^/]*//||' -e 's|/.*$||')
-				sed -ri 's/#baseurl/baseurl/g' /etc/yum.repos.d/CentOS-*
-				sed -ri 's/'$currentRedhatMirror'/vault.centos.org/g' /etc/yum.repos.d/CentOS-*
-				[[ "$CurrentOSVer" == "8" ]] && dnf install python3-librepo -y
-			fi
-			yum install dnf -y
-			# Run dnf update and install components.
-			# In official template of AlmaLinux 9 of Linode, "tuned" must be installed otherwise "grub2-mkconfig" can't work formally.
-			# Reference: https://phanes.silogroup.org/fips-disa-stig-hardening-on-centos9/
-			dnf install epel-release -y
-			dnf install bind-utils cpio curl dmidecode dnsutils efibootmgr file gzip jq net-tools openssl redhat-lsb syslinux tuned util-linux virt-what wget xz --skip-broken -y
-			# Oracle Linux 7 doesn't support DNF.
-		elif [[ $(grep -i "no package" /root/yum_execute.log) ]]; then
-			yum install epel-release -y
-			yum install bind-utils cpio curl dmidecode dnsutils efibootmgr file gzip jq net-tools openssl redhat-lsb syslinux tuned util-linux virt-what wget xz --skip-broken -y
-		fi
-		rm -rf /root/yum_execute.log
-	fi
-
-	# Alpine Linux necessary components and configurations.
-	[[ "$CurrentOS" == "AlpineLinux" ]] && {
+	# Install necessary packages based on OS type
+	if [[ "$CurrentOS" == "ArchLinux" ]]; then
+		# Update pacman databases
+		pacman -Sy
+		# Install Arch Linux necessary components
+		pacman -S --noconfirm base-devel bind-tools cpio curl dmidecode efibootmgr file gzip jq net-tools openssl tuned util-linux virt-what wget xz
+	elif [[ "$CurrentOS" == "Debian" ]] || [[ "$CurrentOS" == "Ubuntu" ]] || [[ "$CurrentOS" == "Kali" ]]; then
+		# Remove problematic packages
+		apt purge inetutils-ping kdump-tools kexec-tools -y
+		# Debian like linux OS necessary components
+		apt install cpio curl dmidecode dnsutils efibootmgr fdisk file gzip iputils-ping jq net-tools openssl tuned util-linux virt-what wget xz-utils -y
+	elif [[ "$CurrentOS" == "AlpineLinux" ]]; then
 		# Get current version number of Alpine Linux
 		CurrentAlpineVer=$(cut -d. -f1,2 </etc/alpine-release)
-		# Try to remove comments of any valid mirror.
+		# Try to remove comments of any valid mirror
 		sed -i 's/#//' /etc/apk/repositories
-		# Add community mirror.
+		# Add community mirror
 		[[ ! $(grep -i "community" /etc/apk/repositories) ]] && sed -i '$a\http://dl-cdn.alpinelinux.org/alpine/v'${CurrentAlpineVer}'/community' /etc/apk/repositories
-		# Add testing mirror.
-		# [[ ! `grep -i "testing" /etc/apk/repositories` ]] && sed -i '$a\http://ftp.udx.icscoe.jp/Linux/alpine/edge/testing' /etc/apk/repositories
-		# Alpine Linux use "apk" as package management.
+		# Alpine Linux use "apk" as package management
 		apk update
 		apk add bash bind-tools coreutils cpio curl dmidecode efibootmgr file gawk grep gzip jq lsblk net-tools openssl sed shadow tzdata util-linux virt-what wget xz
-		# Use bash to replace ash.
+		# Use bash to replace ash
 		sed -i 's/root:\/bin\/ash/root:\/bin\/bash/g' /etc/passwd
-	}
+	else
+		# Redhat like Linux OS prefer to use dnf instead of yum
+		yum install dnf -y
+		if [[ $? -eq 0 ]]; then
+			# Handle CentOS 8 python-librepo issue
+			[[ "$CurrentOS" == "CentOS" && "$CurrentOSVer" == "8" ]] && dnf install python3-librepo -y
+			# Install RedHat like OS necessary components
+			dnf install epel-release -y
+			dnf install bind-utils cpio curl dmidecode dnsutils efibootmgr file gzip jq net-tools openssl redhat-lsb syslinux tuned util-linux virt-what wget xz --skip-broken -y
+		else
+			yum install dnf -y >/root/yum_execute.log 2>&1
+			if [[ $(grep -i "failed to\|no urls in mirrorlist" /root/yum_execute.log) ]]; then
+				if [[ "$CurrentOS" == "CentOS" ]]; then
+					cd /etc/yum.repos.d/
+					sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+					baseRepo=$(ls /etc/yum.repos.d/ | grep -i "base\|cr" | head -n 1)
+					currentRedhatMirror=$(sed -n '/^#baseurl=\|^baseurl=/'p /etc/yum.repos.d/$baseRepo | head -n 1 | awk -F '=' '{print $2}' | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+					sed -ri 's/#baseurl/baseurl/g' /etc/yum.repos.d/CentOS-*
+					sed -ri 's/'$currentRedhatMirror'/vault.centos.org/g' /etc/yum.repos.d/CentOS-*
+					[[ "$CurrentOSVer" == "8" ]] && dnf install python3-librepo -y
+				fi
+				yum install dnf -y
+				dnf install epel-release -y
+				dnf install bind-utils cpio curl dmidecode dnsutils efibootmgr file gzip jq net-tools openssl redhat-lsb syslinux tuned util-linux virt-what wget xz --skip-broken -y
+			elif [[ $(grep -i "no package" /root/yum_execute.log) ]]; then
+				yum install epel-release -y
+				yum install bind-utils cpio curl dmidecode dnsutils efibootmgr file gzip jq net-tools openssl redhat-lsb syslinux tuned util-linux virt-what wget xz --skip-broken -y
+			fi
+			rm -rf /root/yum_execute.log
+		fi
+	fi
 }
 
 function checkVER() {
