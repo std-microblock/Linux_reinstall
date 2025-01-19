@@ -1861,7 +1861,7 @@ function checkWarp() {
 
 	# [[ "$warpStatic" == "1" ]] && {
 	# 	[[ -z "$ipGate" ]] && IPStackType="IPv6Stack" 
-	# 	[[ -z "$ip6Gate" ]] && IPStackType="IPv4Stack"
+	IPStackType="IPv4Stack"
 	# }
 }
 
