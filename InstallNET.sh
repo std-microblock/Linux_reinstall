@@ -1685,6 +1685,7 @@ function checkDIST() {
 # $1 is "$ipAddr", $2 is "$ip6Addr"
 # "1.1.1.1" of CloudFlare was banned in mainland of China, "1.0.0.3" will meet the same death soon later, maybe.
 function checkIpv4OrIpv6() {
+	echo -ne "\n[${green}Info${plain}] Checking the network environment...\n"
 	for ((w = 1; w <= 2; w++)); do
 		IPv4DNSLookup=$(timeout 0.3s dig -4 TXT +short o-o.myaddr.l.google.com @ns3.google.com | sed 's/\"//g')
 		[[ "$IPv4DNSLookup" == "" ]] && IPv4DNSLookup=$(timeout 0.3s dig -4 TXT CH +short whoami.cloudflare @1.0.0.3 | sed 's/\"//g')
@@ -1754,6 +1755,7 @@ function verifyIPv4FormatLawfulness() {
 }
 
 function verifyIPv6FormatLawfulness() {
+	echo -ne "\n[${green}Info${plain}] Checking IPv6 format...\n"
 	[[ -n "$1" ]] && IPv6_Check="$1"
 	# If the last two strings of IPv6 is "::", we should replace ":" to "0" for the last string to make sure it's a valid IPv6(can't end with ":").
 	[[ "${IPv6_Check: -1}" == ":" ]] && IPv6_Check=$(echo "$IPv6_Check" | sed 's/.$/0/')
@@ -1807,6 +1809,7 @@ function verifyIPv6FormatLawfulness() {
 
 # $1 is for IPv4s, $2 is for IPv6s, '1' is private to each stack.
 function checkIfIpv4AndIpv6IsLocalOrPublic() {
+	echo -ne "\n[${green}Info${plain}] Checking IPv4 and IPv6 status...\n"
 	ipv4LocalOrPublicStatus=''
 	ipv6LocalOrPublicStatus=''
 	ip4CertFirst=''
@@ -1835,6 +1838,7 @@ function checkIfIpv4AndIpv6IsLocalOrPublic() {
 # $1 is "warp*.conf", maybe "warp.conf" or "warp-profile.conf"; $2 is "wgcf*.conf", maybe "wgcf.conf" or "wgcf-profile.conf"; $3 is "wg[0-9]", maybe "wg0.conf" or etc.
 # $4/$5/$6 are "warp*/wgcf*/wg[0-9]", $7/$8 are "PrivateKey/PublicKey".
 function checkWarp() {
+	echo -ne "\n[${green}Info${plain}] Checking Warp status...\n"
 	warpConfFiles=$(find / -maxdepth 6 -name "$1" -print -or -name "$2" -print -or -name "$3" -print)
 	sysctlWarpProcess=$(systemctl 2>&1 | grep -i "$4\|$5\|$6" | wc -l)
 	rcWarpProcess=$(rc-status 2>&1 | grep -i "$4\|$5\|$6" | wc -l)
